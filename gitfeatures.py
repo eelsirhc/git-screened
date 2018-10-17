@@ -7,11 +7,49 @@ import json
 from subprocess import call
 import os
 
+counter = 0
+def dump_response(r,fname):
+    global counter
+    print(r.url)
+    print(r.content)
+    json.dump(json.loads(r.content),open("{}{:04d}".format(fname,counter),'w'),indent=2)
+    counter+=1
+
+def repo_commits(repo_url, *args, **kwargs):
+    print("repo commit request")
+    r = get_request(repo_url)
+    dump_response(r, "commit.json")
+    return r
+
+def repo_file(repo_url, *args, **kwargs):
+    print("repo file request")
+    r = get_request(repo_url)
+    dump_response(r,"file.{}.json".format(repo_url.replace("/","_")))
+    return r
+
+def repo_name(repo_url, *args, **kwargs):
+    """Confirm the repo exists."""
+
+    print("repo items request")
+    r = get_request(repo_url)
+    dump_response(r,"repo_name.json")
+    return r
+
+def repo_items(repo_url, *args, **kwargs):
+    """Get the repository contents. I assume"""
+    
+    print("repo items request")
+    r = get_request(repo_url, *args, **kwargs)
+    dump_response(r,"repo_items.json")
+    return r
+
+
 
 def get_request(url, timeout=10):
     """
     Process Github API request.
     """
+    print("api request : {}".format(url))
     r = None
     i = 0
     while r is None and i < 3:
@@ -20,6 +58,7 @@ def get_request(url, timeout=10):
                 auth = open('../keys_passwords/auth.txt').read()
                 username, pw = auth.split()[0], auth.split()[1]
                 authtoken = open('../keys_passwords/token.txt').read()
+                
                 r = requests.get(url, headers={"Accept":
                     "application/vnd.github.mercy-preview+json",
                     "Authorization": "token %s" % authtoken},
@@ -37,7 +76,7 @@ def get_readme_length(contents_url, GProfile):
     """
     Get number of lines in readme if exists. 
     """
-    r = get_request(contents_url)
+    r = repo_file(contents_url)
     if r.ok:
         contents = json.loads(r.text or r.content)
         readme_url = None
@@ -95,11 +134,12 @@ def get_repo_commit_history(item, GProfile):
     """
     try:
         commits_url = item['commits_url'].split('{/sha}')[0]
-        r = get_request(commits_url)
+        r = repo_commits(commits_url)
         commits = json.loads(r.text or r.content)
         GProfile.n_commits = len(commits)
         for commit in commits:
             date_string = commit['commit']['author']['date']
+            print(date_string)
             date = datetime.strptime(date_string.split("T")[0],'%Y-%m-%d')
             GProfile.commit_history.append(date)
 

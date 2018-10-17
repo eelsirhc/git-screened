@@ -83,7 +83,8 @@ def digest_repo(repo_url, GProfile):
     Look through each file and directory, extract metrics from
     each python file. Recursive function.
     """
-    r = gf.get_request('%s' % repo_url)
+    r = gf.repo_items(repo_url)
+    #r = gf.get_request('%s' % repo_url)
     if r.ok:
         repoItems = json.loads(r.text or r.content)
 
@@ -254,7 +255,8 @@ def update_output_div(n_clicks, input_value, checklist):
     if os.path.isfile(repo_path) and 'rescrape' not in checklist:
         GP = joblib.load(repo_path)
     else:
-        r = gf.get_request('https://api.github.com/repos/%s' % input_value)
+        r = gf.repo_name('https://api.github.com/repos/%s' % input_value)
+        
         if r.ok:
             item = json.loads(r.text or r.content)
             GP = get_features(item)
